@@ -14,7 +14,7 @@ const App = (() => {
 'use strict';
 
 /* ── Enlaces del ecosistema Complemento Matemático ── */
-const URL_PORTADA = 'https://complementomatematico.github.io/APCI26/Manual_PAES/';   // ⌂ Inicio (Teoría o Práctica)
+const URL_PORTADA = 'https://complementomatematico.github.io/ComplementoMatematicoPAES/';   // ⌂ Inicio (Teoría o Práctica)
 const URL_LIBRO = v => URL_PORTADA + 'libro-' + v + '.html';                          // 📖 Teoría
 
 /* ── Catálogos (espejo del generador) ── */

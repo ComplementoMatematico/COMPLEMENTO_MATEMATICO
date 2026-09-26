@@ -47,7 +47,7 @@ complemento_matematico/
 Están al comienzo de `js/app.js`:
 
 ```js
-const URL_PORTADA = 'https://complementomatematico.github.io/APCI26/Manual_PAES/';
+const URL_PORTADA = 'https://complementomatematico.github.io/ComplementoMatematicoPAES/';
 ```
 
 Si la portada del libro se publica en otra dirección, cambia solo esa línea.
