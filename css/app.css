@@ -305,6 +305,9 @@ body.con-modal{overflow:hidden}
 .pe-barra{display:flex;height:9px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.08);margin-bottom:10px}
 .pe-ok{background:var(--verde)}.pe-mal{background:var(--rojo)}
 .prog-repaso{display:flex;flex-wrap:wrap;gap:6px}
+.prog-copia{padding:16px;border-radius:12px;background:linear-gradient(135deg,rgba(212,175,55,.09),rgba(255,255,255,.03));border:1px solid var(--borde)}
+.prog-copia p{margin:0;color:var(--suave);line-height:1.55;font-size:.92rem}.prog-copia b{color:var(--crema)}
+.prog-copia .acciones{justify-content:flex-start;margin-top:12px}
 .prog-repaso .chip{font-family:ui-monospace,Consolas,monospace;font-size:.78rem}
 .ayuda-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .ayuda-grid div{padding:14px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--borde)}

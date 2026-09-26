@@ -8,13 +8,15 @@
      cm_practica_hist   → última respuesta, intentos y aciertos por pregunta
      cm_practica_pref   → tiempo elegido, largo del mini ensayo, bienvenida vista
    Las preguntas «vistas» (bloqueadas para la aleatoria) duran solo la sesión,
-   como en la versión anterior.
+   como en la versión anterior. «Mi progreso» permite descargar todo en un
+   archivo .json y volver a cargarlo: al cargarlo, lo respondido y lo visto
+   queda fuera de la aleatoria y del mini ensayo.
    ══════════════════════════════════════════════════════════════════════ */
 const App = (() => {
 'use strict';
 
 /* ── Enlaces del ecosistema Complemento Matemático ── */
-const URL_PORTADA = 'https://complementomatematico.github.io/APCI26/Manual_PAES/';   // ⌂ Inicio (Teoría o Práctica)
+const URL_PORTADA = 'https://complementomatematico.github.io/ComplementoMatematicoPAES/';   // ⌂ Inicio (Teoría o Práctica)
 const URL_LIBRO = v => URL_PORTADA + 'libro-' + v + '.html';                          // 📖 Teoría
 
 /* ── Catálogos (espejo del generador) ── */
@@ -336,7 +338,50 @@ function renderProgreso() {
         <button class="btn btn-sec btn-mini" onclick="App.cerrar();App.eje('${esc(e)}');App.aleatoria()">Practicar ${esc(e)} →</button></div>`; }).join('')}</div>
     <h3>Para repasar <small>${repasar.length ? `(${repasar.length})` : ''}</small></h3>
     ${repasar.length ? `<div class="prog-repaso">${repasar.map(p => `<button class="chip" style="--c:${colorEje(p.eje)}" onclick="App.revisar('${esc(nombreDe(p))}')">${esc(nombreDe(p))}</button>`).join('')}</div>` : '<p class="nota">Aún no hay preguntas falladas. ¡Sigue así!</p>'}
+    <h3>Llevar mi progreso a otro aparato</h3>
+    <div class="prog-copia">
+      <p>Descarga un archivo con tus respuestas y tus preguntas vistas. Luego cárgalo aquí mismo (en este u otro aparato o navegador) y la <b>🎲 Aleatoria</b> y el <b>mini ensayo</b> no te repetirán las preguntas que ya hiciste.</p>
+      <div class="acciones">
+        <button class="btn btn-oro" onclick="App.descargarProgreso()">⬇ Descargar mi progreso</button>
+        <button class="btn btn-sec" onclick="document.getElementById('fProgreso').click()">⬆ Cargar progreso</button>
+        <input type="file" id="fProgreso" accept=".json,application/json" hidden onchange="App.cargarProgreso(this)">
+      </div>
+    </div>
     <div class="acciones"><button class="btn btn-sec" onclick="App.borrarProgreso()">Borrar mi progreso</button></div>`;
+}
+/* Archivo de progreso: { app, version, fecha, hist, vistas } */
+function descargarProgreso() {
+  const vistas = [...S.bloqueadas];
+  if (!Object.keys(hist).length && !vistas.length) return aviso('Aún no tienes progreso: responde alguna pregunta primero.');
+  const datos = { app: 'cm-practica', version: 1, fecha: new Date().toISOString(), hist, vistas };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(datos)], { type: 'application/json' }));
+  const d = new Date(), a = document.createElement('a');
+  a.href = url; a.download = `progreso-paes-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+  aviso(`⬇ Progreso descargado (${Object.keys(hist).length} respondidas, ${vistas.length} vistas).`);
+}
+function cargarProgreso(input) {
+  const f = input.files && input.files[0]; input.value = ''; if (!f) return;
+  const r = new FileReader();
+  r.onerror = () => aviso('No se pudo leer el archivo.');
+  r.onload = () => {
+    let d; try { d = JSON.parse(r.result); } catch (e) { d = null; }
+    if (!d || d.app !== 'cm-practica' || typeof d.hist !== 'object' || !d.hist) return aviso('⚠ Ese archivo no es un progreso de la plataforma.');
+    let nuevas = 0;
+    for (const [k, h] of Object.entries(d.hist)) {          // une: por pregunta gana la respuesta más reciente
+      if (!h || typeof h !== 'object' || !(h.u === 'ok' || h.u === 'mal')) continue;
+      const limpio = { i: Math.max(1, +h.i || 1), c: Math.max(0, +h.c || 0), u: h.u, t: Math.max(0, +h.t || 0), f: +h.f || 0 };
+      const ya = hist[k];
+      if (!ya) { hist[k] = limpio; nuevas++; }
+      else if (limpio.f > (ya.f || 0)) hist[k] = Object.assign(limpio, { i: Math.max(limpio.i, ya.i), c: Math.max(limpio.c, ya.c) });
+    }
+    guardar('cm_practica_hist', hist);
+    const antes = S.bloqueadas.size;                          // no repetir: respondidas y vistas quedan fuera de la aleatoria
+    [...Object.keys(d.hist), ...(Array.isArray(d.vistas) ? d.vistas : [])].forEach(k => { if (porNombre.has(k)) S.bloqueadas.add(k); });
+    renderProgreso(); renderAvance(); renderMapa(); renderPregunta();
+    aviso(`⬆ Progreso cargado: ${nuevas} respuesta${nuevas === 1 ? '' : 's'} nueva${nuevas === 1 ? '' : 's'} · ${S.bloqueadas.size - antes} pregunta${S.bloqueadas.size - antes === 1 ? '' : 's'} fuera de la aleatoria.`);
+  };
+  r.readAsText(f);
 }
 function borrarProgreso() { if (!confirm('¿Borrar todo tu progreso guardado en este aparato?')) return; Object.keys(hist).forEach(k => delete hist[k]); guardar('cm_practica_hist', hist); renderProgreso(); renderAvance(); renderMapa(); renderPregunta(); aviso('Progreso borrado.'); }
 
@@ -413,7 +458,7 @@ const api = {
   largoEnsayo(n) { pref.ensayo = n; guardarPref(); document.querySelectorAll('#fEnsayo button').forEach(b => { const on = +b.textContent === n; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); }); },
   ejeAct(e) { S.ejeAct = e; renderActividades(); },
   ir(k) { if (S.ensayo) return aviso('Estás en un mini ensayo: termínalo o sal con «Salir».'); ir(k); }, iniciar, responder, reiniciar, botonReloj, mover, aleatoria, alternarBloqueo, desbloquearTodas, compartir, video,
-  iniciarEnsayo, siguienteEnsayo, salirEnsayo, revisar, borrarProgreso, abrir, cerrar, lupa, cerrarLupa, filtros,
+  iniciarEnsayo, siguienteEnsayo, salirEnsayo, revisar, borrarProgreso, descargarProgreso, cargarProgreso, abrir, cerrar, lupa, cerrarLupa, filtros,
   irArriba() { scrollTo({ top: 0, behavior: 'smooth' }); },
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
